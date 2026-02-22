@@ -1,13 +1,15 @@
-  // ESP32-3248S035C: 3.2" 320x480 TFT + GT911 touch, Bluetooth MIDI over SPP
-  // Requires: Arduino IDE + ESP32 board package (no extra libraries)
+  // ESP32-3248S035C: 3.2" 320x480 TFT + GT911 touch, BLE MIDI
+  // Requires: ESP32 board package, BLE-MIDI, MIDI, NimBLE-Arduino
+  // Shows up in macOS Audio MIDI Setup → add device → add session
   #include <Arduino.h>
   #include <SPI.h>
   #include <Wire.h>
-  #include "BluetoothSerial.h"
+  #include <MIDI.h>
+  #include <BLEMIDI_Transport.h>
+  #include <hardware/BLEMIDI_ESP32_NimBLE.h>
 
-  // Bluetooth settings
-  const char *deviceName = "ESP32-Touch-Guitar";
-  
+  BLEMIDI_CREATE_INSTANCE("ESP32-Touch-Guitar", MIDI)
+
   // MIDI settings
   #define MIDI_CC_X 22     // CC number for X position
   #define MIDI_CC_Y 23     // CC number for Y position
@@ -53,8 +55,8 @@
   // Tracking connection state
   bool isConnected = false;
 
-  // Create Bluetooth Serial instance
-  BluetoothSerial SerialBT;
+  void OnBLEConnected()    { isConnected = true; }
+  void OnBLEDisconnected() { isConnected = false; }
 
   void setup()
   {
@@ -157,47 +159,19 @@
       Serial.println("No I2C devices found");
     }
 
-    // Initialize Bluetooth
-    Serial.print("Initializing Bluetooth as ");
-    Serial.println(deviceName);
-
-    if (!SerialBT.begin(deviceName))
-    {
-      Serial.println("Bluetooth initialization failed!");
-      
-      // Blink red LED to indicate Bluetooth failure
-      for (int i = 0; i < 3; i++)
-      {
-        digitalWrite(LED_R, LOW);
-        delay(200);
-        digitalWrite(LED_R, HIGH);
-        delay(200);
-      }
-    }
-    else
-    {
-      Serial.println("Bluetooth initialized successfully");
-      Serial.println("Device is discoverable and ready to pair");
-
-      // Blink green LED to indicate Bluetooth ready
-      digitalWrite(LED_G, LOW);
-      delay(200);
-      digitalWrite(LED_G, HIGH);
-    }
-
-    Serial.println("OK, now pair your computer with this Bluetooth device");
-    Serial.print("Device name: ");
-    Serial.println(deviceName);
-    Serial.println("Then open a Bluetooth MIDI listener to receive MIDI commands");
-
+    // Initialize BLE MIDI (shows up in macOS Audio MIDI Setup)
+    Serial.println("Initializing BLE MIDI (ESP32-Touch-Guitar)");
+    BLEMIDI.setHandleConnected(OnBLEConnected);
+    BLEMIDI.setHandleDisconnected(OnBLEDisconnected);
+    MIDI.begin();
+    Serial.println("BLE MIDI ready. Add this device in Audio MIDI Setup and create a session.");
     Serial.println("\nREADY TO TEST TOUCHSCREEN MIDI");
     Serial.println("Touch the screen to send MIDI Control Changes");
   }
 
   void loop()
   {
-    // Check Bluetooth connection status
-    isConnected = SerialBT.hasClient();
+    MIDI.read();
 
     static unsigned long lastTouchCheck = 0;
     static bool wasTouch = false;
@@ -249,9 +223,7 @@
             if (midiX != lastX)
             {
               if (isConnected) {
-                SerialBT.write(0xB0 | (MIDI_CHANNEL - 1)); // Control Change + channel
-                SerialBT.write(MIDI_CC_X);
-                SerialBT.write(midiX);
+                MIDI.sendControlChange(MIDI_CC_X, midiX, MIDI_CHANNEL);
               }
               lastX = midiX;
             }
@@ -259,9 +231,7 @@
             if (midiY != lastY)
             {
               if (isConnected) {
-                SerialBT.write(0xB0 | (MIDI_CHANNEL - 1)); // Control Change + channel
-                SerialBT.write(MIDI_CC_Y);
-                SerialBT.write(midiY);
+                MIDI.sendControlChange(MIDI_CC_Y, midiY, MIDI_CHANNEL);
               }
               lastY = midiY;
             }
@@ -270,9 +240,7 @@
             if (!wasTouch)
             {
               if (isConnected) {
-                SerialBT.write(0xB0 | (MIDI_CHANNEL - 1)); // Control Change + channel
-                SerialBT.write(MIDI_CC_TOUCH);
-                SerialBT.write(127);
+                MIDI.sendControlChange(MIDI_CC_TOUCH, 127, MIDI_CHANNEL);
               }
               Serial.println("Touch ON - MIDI sent");
             }
@@ -311,9 +279,7 @@
 
           // Send touch off message
           if (isConnected) {
-            SerialBT.write(0xB0 | (MIDI_CHANNEL - 1)); // Control Change + channel
-            SerialBT.write(MIDI_CC_TOUCH);
-            SerialBT.write(0);
+            MIDI.sendControlChange(MIDI_CC_TOUCH, 0, MIDI_CHANNEL);
           }
 
           Serial.println("Touch OFF - MIDI sent");
