@@ -22,8 +22,8 @@ Shows up in **macOS Audio MIDI Setup** — add device, add session, no extra app
 
 ### 2. Libraries (Sketch → Include Library → Manage Libraries)
 
-- **BLE-MIDI** (lathoub) — install this first; it will prompt for the **MIDI** library (FortySevenEffects), install that too.
-- **NimBLE-Arduino** (h2zero) — recommended for ESP32 to avoid BLE namespace issues.
+- **BLE-MIDI** (lathoub) — install this first; it will prompt for the **MIDI** library (FortySevenEffects), install that too.  
+  The sketch uses the built-in ESP32 BLE backend (not NimBLE), so you do **not** need NimBLE-Arduino.
 
 ---
 
@@ -58,7 +58,7 @@ If your board appears in the list with a name like “ESP32 3248S035” or “ES
 - **Display:** Kept off/black (SPI TFT init only to avoid garbage on screen).
 - **Touch:** GT911 over I2C; X/Y and touch on/off are sent as MIDI CC.
 - **Bluetooth:** BLE MIDI, device name **“ESP32-Touch-Guitar”**.
-- **MIDI:** CC on channel 1:
+- **MIDI:** CC on channel 10:
   - CC 22 = X (0–127)
   - CC 23 = Y (0–127)
   - CC 24 = touch state (127 = touch, 0 = release)

@@ -1,12 +1,12 @@
   // ESP32-3248S035C: 3.2" 320x480 TFT + GT911 touch, BLE MIDI
-  // Requires: ESP32 board package, BLE-MIDI, MIDI, NimBLE-Arduino
+  // Requires: ESP32 board package, BLE-MIDI, MIDI (no NimBLE — uses built-in ESP32 BLE)
   // Shows up in macOS Audio MIDI Setup → add device → add session
   #include <Arduino.h>
   #include <SPI.h>
   #include <Wire.h>
   #include <MIDI.h>
   #include <BLEMIDI_Transport.h>
-  #include <hardware/BLEMIDI_ESP32_NimBLE.h>
+  #include <hardware/BLEMIDI_ESP32.h>
 
   BLEMIDI_CREATE_INSTANCE("ESP32-Touch-Guitar", MIDI)
 
@@ -14,7 +14,7 @@
   #define MIDI_CC_X 22     // CC number for X position
   #define MIDI_CC_Y 23     // CC number for Y position
   #define MIDI_CC_TOUCH 24 // CC number for touch state
-  #define MIDI_CHANNEL 1   // MIDI channel to send on
+  #define MIDI_CHANNEL 10  // MIDI channel to send on
 
   // Keep screen black
   #define TFT_CS 5
